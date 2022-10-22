@@ -1,7 +1,7 @@
 // 抽离effect函数功能
 class ReactiveEffect {
   private _fn: any;
-  constructor(fn) {
+  constructor(fn, public scheduler?) {
     this._fn = fn;
   }
   run() {
@@ -10,7 +10,6 @@ class ReactiveEffect {
     return this._fn();
   }
 }
-
 
 // 收集依赖
 const targetMap = new Map();
@@ -45,24 +44,28 @@ export function track(target, key) {
 }
 
 // 触发依赖
-
 export function trigger(target, key) {
-    // 取出收集到的依赖
-    let depsMap = targetMap.get(target);
-    // 该 key 所对应的 set 集合
-    let dep = depsMap.get(key);
-    // 遍历执行
-    for (const effect of dep) {
-        effect.run();
+  // 取出收集到的依赖
+  let depsMap = targetMap.get(target);
+  // 该 key 所对应的 set 集合
+  let dep = depsMap.get(key);
+  // 遍历执行
+  for (const effect of dep) {
+    if (effect.scheduler) {
+      effect.scheduler();
+    } else {
+      effect.run();
     }
+  }
 }
 
 // 存储 reactiveEffect 类的全局变量
 let reactiveEffect;
 
+export function effect(fn, options: any = {}) {
+  const scheduler = options.scheduler;
 
-export function effect(fn) {
-  const _effect = new ReactiveEffect(fn);
+  const _effect = new ReactiveEffect(fn, scheduler);
   // 执行 effect 函数传入的 fn 函数
   _effect.run();
   // 返回用户传入的 fn 函数
