@@ -1,5 +1,5 @@
 import { reactive } from "../reactive";
-import { effect } from "../effect";
+import { effect, stop } from "../effect";
 describe("effect", () => {
   it("happy path", () => {
     const user = reactive({
@@ -34,36 +34,62 @@ describe("effect", () => {
     expect(foo).toBe(12);
     expect(r).toBe('foo');
   });
+
+  it("scheduler", () => {
+    // 1.通过 effect 的第二个参数给定的一个 scheduler 函数
+    // 2.effect 第一次执行的时候，调用的是第一个参数的函数
+    // 3.当响应式对象 set 更新时，不会执行第一个参数函数，而是执行 scheduler 函数
+    // 4.如果当执行 runner 的时候，会再次执行 第一个参数函数
+    let dummy;
+    let run: any;
+    // scheduler 接收一个函数
+    const scheduler = jest.fn(() => {
+      run = runner;
+    });
+    const obj = reactive({ foo: 1 });
+    const runner = effect(
+      () => {
+        dummy = obj.foo;
+      },
+      { scheduler }
+    );
+    expect(scheduler).not.toHaveBeenCalled();
+    expect(dummy).toBe(1);
+    // should be called on first trigger
+    // 当响应式数据发生更改的时候，执行scheduler，不执行第一个参数的函数
+    obj.foo++;
+    expect(scheduler).toHaveBeenCalledTimes(1);
+    // // should not run yet
+    expect(dummy).toBe(1);
+    // // manually run
+    run();
+    // // should have run
+    expect(dummy).toBe(2);
+  });
+  
+  it("stop", () => {
+    let dummy;
+    const obj = reactive({ prop: 1 });
+    const runner = effect(() => {
+      dummy = obj.prop;
+    });
+    obj.prop = 2;
+    expect(dummy).toBe(2);
+    stop(runner);
+    obj.prop = 3
+    expect(dummy).toBe(2);
+    // stopped effect should still be manually callable
+    runner();
+    expect(dummy).toBe(3);
+  });
+  it("events: onStop", () => {
+    const onStop = jest.fn();
+    const runner = effect(() => {}, {
+      onStop,
+    });
+
+    stop(runner);
+    expect(onStop).toHaveBeenCalled();
+  });
 });
 
-it("scheduler", () => {
-  // 1.通过 effect 的第二个参数给定的一个 scheduler 函数
-  // 2.effect 第一次执行的时候，调用的是第一个参数的函数
-  // 3.当响应式对象 set 更新时，不会执行第一个参数函数，而是执行 scheduler 函数
-  // 4.如果当执行 runner 的时候，会再次执行 第一个参数函数
-  let dummy;
-  let run: any;
-  // scheduler 接收一个函数
-  const scheduler = jest.fn(() => {
-    run = runner;
-  });
-  const obj = reactive({ foo: 1 });
-  const runner = effect(
-    () => {
-      dummy = obj.foo;
-    },
-    { scheduler }
-  );
-  expect(scheduler).not.toHaveBeenCalled();
-  expect(dummy).toBe(1);
-  // should be called on first trigger
-  // 当响应式数据发生更改的时候，执行scheduler，不执行第一个参数的函数
-  obj.foo++;
-  expect(scheduler).toHaveBeenCalledTimes(1);
-  // // should not run yet
-  expect(dummy).toBe(1);
-  // // manually run
-  run();
-  // // should have run
-  expect(dummy).toBe(2);
-});
