@@ -7,7 +7,7 @@ class ReactiveEffect {
   run() {
     // 给存储 reactiveEffect 类的全局变量赋值
     reactiveEffect = this;
-    this._fn();
+    return this._fn();
   }
 }
 
@@ -59,8 +59,12 @@ export function trigger(target, key) {
 
 // 存储 reactiveEffect 类的全局变量
 let reactiveEffect;
-// 执行 effect 函数传入的 fn 函数
+
+
 export function effect(fn) {
   const _effect = new ReactiveEffect(fn);
+  // 执行 effect 函数传入的 fn 函数
   _effect.run();
+  // 返回用户传入的 fn 函数
+  return _effect.run.bind(_effect);
 }
