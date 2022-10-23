@@ -1,8 +1,15 @@
 import { track, trigger } from "./effect";
-
+import { ReactiveFlags } from "./reactive";
 // 抽离 Proxy 的 get 方法
 function createGetter(isReadonly = false) {
   return function get(target, key) {
+    // 判断是否是只读的
+    if (key === ReactiveFlags.IS_REACTIVE) {
+      return !isReadonly;
+    }else if(key === ReactiveFlags.IS_READONLY) {
+        return isReadonly;
+    }
+
     // 读取值
     const res = Reflect.get(target, key);
     // 判断是否是只读的
