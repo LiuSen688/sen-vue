@@ -1,5 +1,7 @@
+import { isObject } from './../shared/index';
 import { track, trigger } from "./effect";
-import { ReactiveFlags } from "./reactive";
+import { reactive, ReactiveFlags, readonly } from "./reactive";
+
 // 抽离 Proxy 的 get 方法
 function createGetter(isReadonly = false) {
   return function get(target, key) {
@@ -12,6 +14,12 @@ function createGetter(isReadonly = false) {
 
     // 读取值
     const res = Reflect.get(target, key);
+    // 嵌套对象仍然处理成reactive()响应式
+    // 判断读取的值 是否是对象，如果是的话就用 reactive()处理
+    if(isObject(res)) {
+        return isReadonly ? readonly(res) : reactive(res);
+    }
+
     // 判断是否是只读的
     if (!isReadonly) {
       track(target, key);
