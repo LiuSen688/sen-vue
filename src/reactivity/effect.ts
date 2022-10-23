@@ -1,18 +1,31 @@
 import { extend } from "../shared/index";
+
+// 存储 ReactiveEffect 类的全局变量
+let reactiveEffect;
+let shouldTrack;
+
 // 抽离effect函数功能
 class ReactiveEffect {
   private _fn: any;
   // 反向收集 effect
   deps = [];
+  // stop方法是否执行过的标志
   active = true;
   onStop?: () => void;
   constructor(fn, public scheduler?) {
     this._fn = fn;
   }
   run() {
+    if (!this.active) {
+      return this._fn();
+    }
+    // 没有执行过 stop 应该触发依赖收集
+    shouldTrack = true;
     // 给存储 ReactiveEffect 类的全局变量赋值
     reactiveEffect = this;
-    return this._fn();
+    const result = this._fn();
+    shouldTrack = false;
+    return result;
   }
   stop() {
     // 性能优化：防止频繁调用stop重复清空
@@ -30,11 +43,21 @@ function cleanupEffect(effect) {
   effect.deps.forEach((dep: any) => {
     dep.delete(effect);
   });
+  effect.deps.length = 0;
+}
+
+function isTracking() {
+  // if (!shouldTrack) return;
+  // if (!reactiveEffect) return;
+  return shouldTrack && reactiveEffect !== undefined;
 }
 
 // 收集依赖
 const targetMap = new Map();
 export function track(target, key) {
+  // 是否执行过 stop 方法 -> 执行过当再次触发 getter 时不应该收集依赖
+  if (!isTracking()) return;
+
   // 什么是依赖？
   // 通过reactive()声明的响应式对象 -> 对应的所有有关触发响应式数据更新的函数的集合
   // 需要一个容器存储所收集的所有依赖，而依赖对应的函数不能重复，所以选择使用 Set 进行存储
@@ -60,11 +83,13 @@ export function track(target, key) {
     depsMap.set(key, dep);
   }
 
-  if (!reactiveEffect) return;
-  // 添加对应的 effect 函数（操作更改该属性值响应式的函数）
-  // effect 函数从 ReactiveEffect类的实例中获取
+  // 收集的内容已经存在与 dep 中了
+  if (dep.has(reactiveEffect)) return;
+
+  // 依赖：对响应式数据的更改会作为函数 fn 传入到 effect 函数中，要收集的就是这个 fn 函数，而fn函数会被包含在一个抽离的ReactiveEffect类的实例中获取类中
+  // fn 函数从 ReactiveEffect类的实例中获取
   dep.add(reactiveEffect);
-  // 反向收集 effect
+  // 反向收集依赖--为了stop时清空依赖
   reactiveEffect.deps.push(dep);
 }
 
@@ -83,9 +108,6 @@ export function trigger(target, key) {
     }
   }
 }
-
-// 存储 ReactiveEffect 类的全局变量
-let reactiveEffect;
 
 export function effect(fn, options: any = {}) {
   const _effect = new ReactiveEffect(fn, options.scheduler);
