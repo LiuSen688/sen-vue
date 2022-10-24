@@ -6,6 +6,8 @@ class RefImpl {
   private _value: any;
   private _rawValue: any;
   public dep;
+  // 判断是否是 Ref 的标志
+  public __v_isRef = true;
   constructor(value) {
     // 存储一下最初传入的 value值
     // 因为传入的value如果是对象的话，会经过reactive处理变成Proxy
@@ -34,8 +36,8 @@ class RefImpl {
 }
 
 // 根据传入的值是否是对象数据类型决定是否需要reactive处理一下
-function convert(value){
-    return isObject(value) ? reactive(value) : value;
+function convert(value) {
+  return isObject(value) ? reactive(value) : value;
 }
 
 // 根据全局变量是否被赋值 判断是否需要收集依赖
@@ -44,7 +46,18 @@ function trackRefValue(ref) {
     trackEffects(ref.dep);
   }
 }
-
+// ref 处理基本数据类型为响应式
 export function ref(value) {
   return new RefImpl(value);
+}
+// 判断变量是否是 Ref 类型
+export function isRef(ref) {
+  return !!ref.__v_isRef;
+}
+
+export function unRef(ref){
+    // 逻辑
+    // 判断传入的 ref 是否是 Ref 类型
+    // 是：返回 ref.value  不是：返回 ref 本身
+    return isRef(ref) ? ref.value : ref;
 }
