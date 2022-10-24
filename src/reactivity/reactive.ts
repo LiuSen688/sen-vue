@@ -37,3 +37,7 @@ export function isReadonly(value) {
   return !!value[ReactiveFlags.IS_READONLY];
 }
 
+// isProxy 方法实现
+export function isProxy(value){
+  return isReactive(value) || isReadonly(value);
+}

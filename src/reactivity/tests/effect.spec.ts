@@ -66,7 +66,7 @@ describe("effect", () => {
     // // should have run
     expect(dummy).toBe(2);
   });
-  
+
   it("stop", () => {
     let dummy;
     const obj = reactive({ prop: 1 });
@@ -83,10 +83,10 @@ describe("effect", () => {
     runner();
     expect(dummy).toBe(3);
   });
-  
+
   it("events: onStop", () => {
     const onStop = jest.fn();
-    const runner = effect(() => {}, {
+    const runner = effect(() => { }, {
       onStop,
     });
 
