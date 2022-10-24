@@ -55,9 +55,28 @@ export function isRef(ref) {
   return !!ref.__v_isRef;
 }
 
-export function unRef(ref){
-    // 逻辑
-    // 判断传入的 ref 是否是 Ref 类型
-    // 是：返回 ref.value  不是：返回 ref 本身
-    return isRef(ref) ? ref.value : ref;
+export function unRef(ref) {
+  // 逻辑
+  // 判断传入的 ref 是否是 Ref 类型
+  // 是：返回 ref.value  不是：返回 ref 本身
+  return isRef(ref) ? ref.value : ref;
+}
+// 主要用在template模板中，可以不用通过.value访问到ref类型的值
+export function proxyRefs(objetWithRefs) {
+  return new Proxy(objetWithRefs, {
+    get(target, key) {
+      // 判断读取的属性名的值是否是 Ref 类型
+      // 逻辑同 unRef 方法
+      return unRef(Reflect.get(target, key));
+    },
+    set(target, key, value) {
+        // 如果想要改变的属性值是Ref类型，且要改变的新值不是Ref类型
+        // 则更新该Ref类型属性的value值
+        if(isRef(target[key]) && !isRef(value)) {
+            return target[key].value = value;
+        }else {
+            return Reflect.set(target, key, value);
+        }
+    },
+  });
 }
