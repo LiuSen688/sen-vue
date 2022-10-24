@@ -45,8 +45,8 @@ function cleanupEffect(effect) {
   });
   effect.deps.length = 0;
 }
-
-function isTracking() {
+// 是否要收集依赖
+export function isTracking() {
   // if (!shouldTrack) return;
   // if (!reactiveEffect) return;
   return shouldTrack && reactiveEffect !== undefined;
@@ -82,7 +82,12 @@ export function track(target, key) {
     dep = new Set();
     depsMap.set(key, dep);
   }
+  // 收集依赖
+  trackEffects(dep);
+}
 
+// 抽离 track 收集依赖的逻辑
+export function trackEffects(dep) {
   // 收集的内容已经存在与 dep 中了
   if (dep.has(reactiveEffect)) return;
 
@@ -99,7 +104,12 @@ export function trigger(target, key) {
   let depsMap = targetMap.get(target);
   // 该 key 所对应的 set 集合
   let dep = depsMap.get(key);
-  // 遍历执行
+  triggerEffects(dep);
+}
+
+// 抽离trigger触发依赖的逻辑
+export function triggerEffects(dep) {
+  // 遍历执行收集到的依赖
   for (const effect of dep) {
     if (effect.scheduler) {
       effect.scheduler();
