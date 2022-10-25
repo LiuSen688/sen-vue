@@ -5,15 +5,17 @@ let reactiveEffect;
 let shouldTrack;
 
 // 抽离effect函数功能
-class ReactiveEffect {
+export class ReactiveEffect {
   private _fn: any;
   // 反向收集 effect
   deps = [];
   // stop方法是否执行过的标志
   active = true;
   onStop?: () => void;
-  constructor(fn, public scheduler?) {
+  public scheduler: Function | undefined;
+  constructor(fn, scheduler?: Function) {
     this._fn = fn;
+    this.scheduler = scheduler;
   }
   run() {
     if (!this.active) {
