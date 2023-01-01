@@ -7,7 +7,7 @@ class ComputedRefImpl {
   private _value: any;
   
   private _effect: any;
-  constructor(getter) {
+  constructor(getter) { 
     // 利用 scheduler 
     // 当传入 scheduler 后，触发依赖不会执行 getter 函数
     // 需要手动执行 runner

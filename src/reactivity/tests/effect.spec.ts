@@ -39,7 +39,7 @@ describe("effect", () => {
     // 1.通过 effect 的第二个参数给定的一个 scheduler 函数
     // 2.effect 第一次执行的时候，调用的是第一个参数的函数
     // 3.当响应式对象 set 更新时，不会执行第一个参数函数，而是执行 scheduler 函数
-    // 4.如果当执行 runner 的时候，会再次执行 第一个参数函数
+    // 4.如果当执行 runner 的时候，会再次执行第一个参数函数
     let dummy;
     let run: any;
     // scheduler 接收一个函数

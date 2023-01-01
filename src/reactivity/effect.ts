@@ -18,6 +18,7 @@ export class ReactiveEffect {
     this.scheduler = scheduler;
   }
   run() {
+    // 如果是 stop 状态 直接调用 fn
     if (!this.active) {
       return this._fn();
     }
@@ -49,8 +50,6 @@ function cleanupEffect(effect) {
 }
 // 是否要收集依赖
 export function isTracking() {
-  // if (!shouldTrack) return;
-  // if (!reactiveEffect) return;
   return shouldTrack && reactiveEffect !== undefined;
 }
 
