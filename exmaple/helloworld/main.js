@@ -1,2 +1,5 @@
+import { createApp } from "../../lib/sen-mini-vue.esm.js";
+import { App } from "./App.js";
 
-creatApp(App).mount('#app');
+const rootContainer = document.querySelector("#app");
+createApp(App).mount(rootContainer);
