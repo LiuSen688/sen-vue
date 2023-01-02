@@ -8,7 +8,7 @@ export function createApp(rootComponent){
             // component -> vnode
             // 后续的逻辑操作都会基于 vnode 虚拟节点做处理
             const vnode = createVNode(rootComponent);
-
+            // 将虚拟结点转换为真实结点并挂载到 rootContainer DOM容器上
             render(vnode, rootContainer);
         }
     }
