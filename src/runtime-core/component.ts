@@ -21,7 +21,7 @@ export function createComponentInstance(vnode) {
 export function setupComponent(instance) {
   // todo
   initProps(instance, instance.vnode.props);
-  initSlots(instance,instance.vnode.children);
+  initSlots(instance, instance.vnode.children);
 
   // 处理有状态的组件
   setupStatefulComponent(instance);
@@ -35,9 +35,13 @@ function setupStatefulComponent(instance: any) {
   const { setup } = Component;
   // 判断是否写了 setup 函数
   if (setup) {
+    // 实现 getCurrentInstance 方法
+    setCurrentInstance(instance);
     const setupResult = setup(shallowReadonly(instance.props), { emit: instance.emit });
     // setup函数结果可能是函数（render函数）也可能是对象
     handleSetupResult(instance, setupResult);
+    // 执行完 setup 函数后，重置全局变量
+    setCurrentInstance(null);
   }
 }
 // 根据 setup 函数返回值进行判断处理
@@ -55,4 +59,14 @@ function finishComponentSetup(instance: any) {
   if (Component.render) {
     instance.render = Component.render;
   }
+}
+
+let currentInstance = null;
+
+export function getCurrentInstance() {
+  return currentInstance;
+}
+
+export function setCurrentInstance(instance) {
+  currentInstance = instance;
 }
