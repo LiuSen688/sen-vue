@@ -8,15 +8,15 @@ export function createRenderer(options) {
   const { createElement, patchProp, insert, remove: hostRemove, setElementText: hostSetElementText } = options;
   function render(vnode, container) {
     // 调用patch方法
-    patch(null, vnode, container, null);
+    patch(null, vnode, container, null, null);
   }
   // n1 代表 老的 虚拟结点
   // n2 代表 新的 虚拟结点
-  function patch(n1, n2, container, parentComponent) {
+  function patch(n1, n2, container, parentComponent, anchor) {
     // 给定一个特殊标识 Fragment，它只渲染 children（子结点）
     switch (n2.type) {
       case Fragment:
-        processFragment(n1, n2.children, container, parentComponent);
+        processFragment(n1, n2.children, container, parentComponent, anchor);
         break;
 
       default:
@@ -24,28 +24,27 @@ export function createRenderer(options) {
         // 根据vnode不同类型执行不同的处理函数
         if (typeof n2.type === "string") {
           // 处理 element 类型
-          processElement(n1, n2, container, parentComponent);
+          processElement(n1, n2, container, parentComponent, anchor);
         } else if (isObject(n2.type)) {
           // 处理 component 类型
-          processComponent(n1, n2, container, parentComponent);
+          processComponent(n1, n2, container, parentComponent, anchor);
         }
         break;
     }
   }
 
-  function processElement(n1, n2: any, container: any, parentComponent) {
-    debugger;
+  function processElement(n1, n2: any, container: any, parentComponent, anchor) {
     // 旧虚拟结点不存在，意味着是初次挂载
     if (!n1) {
-      mountElement(n2, container, parentComponent);
+      mountElement(n2, container, parentComponent, anchor);
     }
     // 旧虚拟结点存在，意味着要走更新流程
     else {
-      patchElement(n1, n2, container, parentComponent);
+      patchElement(n1, n2, container, parentComponent, anchor);
     }
   }
 
-  function patchElement(n1, n2, container, parentComponent) {
+  function patchElement(n1, n2, container, parentComponent, anchor) {
     console.log("patchElement: ");
     console.log("n2: ", n2);
     console.log("n1: ", n1);
@@ -58,10 +57,10 @@ export function createRenderer(options) {
     const el = (n2.el = n1.el);
 
     patchProps(el, oldProps, newProps);
-    patchChildren(n1, n2, el, parentComponent);
+    patchChildren(n1, n2, el, parentComponent, anchor);
   }
 
-  function patchChildren(n1, n2, container, parentComponent) {
+  function patchChildren(n1, n2, container, parentComponent, anchor) {
     const n1Children = n1.children;
     const n2Children = n2.children;
     // 更新后的虚拟结点的 children 为 string 类型 (文本结点)
@@ -86,8 +85,70 @@ export function createRenderer(options) {
         // 先清空之前的文本结点
         hostSetElementText(container, "");
         // 将新的 array 类型的 children虚拟结点变成真实DOM并挂载
-        mountChildren(n2Children, container, parentComponent);
+        mountChildren(n2Children, container, parentComponent, anchor);
+      } else {
+        // array diff array 的情况
+        patchKeyedChildren(n1Children, n2Children, container, parentComponent, anchor);
       }
+    }
+  }
+
+  function patchKeyedChildren(n1Children, n2Children, container, parentComponent, patchAnchor) {
+    let i = 0;
+    let e1 = n1Children.length - 1;
+    let e2 = n2Children.length - 1;
+    // 判断俩个结点是否是相同的
+    function isSomeVNodeType(n1, n2) {
+      // 利用俩个结点的 key 和 type 进行判断
+      return n1.type === n2.type && n1.key === n2.key;
+    }
+    debugger;
+    // 从左侧开始的对比
+    while (i <= e1 && i <= e2) {
+      // 取出新旧数组相同下标所对应的元素
+      const n1 = n1Children[i];
+      const n2 = n2Children[i];
+      if (isSomeVNodeType(n1, n2)) {
+        patch(n1, n2, container, parentComponent, patchAnchor);
+      } else {
+        break;
+      }
+      i++;
+    }
+    // 从右侧开始的对比
+    while (i <= e1 && i <= e2) {
+      const n1 = n1Children[e1];
+      const n2 = n2Children[e2];
+
+      if (isSomeVNodeType(n1, n2)) {
+        patch(n1, n2, container, parentComponent, patchAnchor);
+      } else {
+        break;
+      }
+      // e1 e2 分别是新旧数组结点的末尾，从右像左遍历，所以是 --
+      e1--;
+      e2--;
+    }
+    // 新的比旧的长 -- 新增结点
+    if (i > e1) {
+      if (i <= e2) {
+        const nextPos = e2 + 1;
+        const anchor = nextPos < n2Children.length ? n2Children[nextPos].el : null;
+        debugger;
+        while (i <= e2) {
+          patch(null, n2Children[i], container, parentComponent, anchor);
+          i++;
+        }
+      }
+    }
+    // 旧的比新的长 -- 删除旧结点
+    else if (i > e2) {
+      while (i <= e1) {
+        hostRemove(n1Children[i].el);
+        i++;
+      }
+    }else {
+      // 乱序的部分
     }
   }
 
@@ -123,7 +184,7 @@ export function createRenderer(options) {
     }
   }
 
-  function mountElement(vnode: any, container: any, parentComponent) {
+  function mountElement(vnode: any, container: any, parentComponent, anchor) {
     const el = (vnode.el = createElement(vnode.type));
 
     const { children, props } = vnode;
@@ -132,7 +193,7 @@ export function createRenderer(options) {
       el.textContent = children;
     } else if (Array.isArray(children)) {
       // 数组中每一个元素都是一个虚拟结点，递归调用 patch
-      mountChildren(children, el, parentComponent);
+      mountChildren(children, el, parentComponent, anchor);
     }
     // 处理 props
     for (const key in props) {
@@ -144,13 +205,13 @@ export function createRenderer(options) {
     insert(el, container);
   }
 
-  function mountChildren(children, container, parentComponent) {
+  function mountChildren(children, container, parentComponent, anchor) {
     children.forEach((v) => {
-      patch(null, v, container, parentComponent);
+      patch(null, v, container, parentComponent, anchor);
     });
   }
 
-  function processComponent(n1, n2: any, container: any, parentComponent) {
+  function processComponent(n1, n2: any, container: any, parentComponent, anchor) {
     // if (!n1) {
     //   // 初始化 component
     //   mountComponent(n2, container, parentComponent);
@@ -158,22 +219,21 @@ export function createRenderer(options) {
     //   patchElement(n1, n2, container);
     // }
     // 挂载组件
-    mountComponent(n2, container, parentComponent);
+    mountComponent(n2, container, parentComponent, anchor);
   }
 
-  function mountComponent(initialVnode: any, container, parentComponent) {
+  function mountComponent(initialVnode: any, container, parentComponent, anchor) {
     // 创建组件实例
     const instance = createComponentInstance(initialVnode, parentComponent);
     // 处理 props、slot、
     // 这个函数执行完 instance 身上挂载上了 render 函数
     setupComponent(instance);
-    setupRenderEffect(instance, initialVnode, container);
+    setupRenderEffect(instance, initialVnode, container, anchor);
   }
 
-  function setupRenderEffect(instance: any, initialVnode, container) {
+  function setupRenderEffect(instance: any, initialVnode, container, anchor) {
     // 利用effect进行依赖收集
     effect(() => {
-      debugger;
       // 如果没有挂载则挂载结点（初次初始化）
       if (!instance.isMounted) {
         const { proxy } = instance;
@@ -182,7 +242,7 @@ export function createRenderer(options) {
         // 同时给 instance 实例身上挂载一个当前的 subTree 虚拟结点
         const subTree = (instance.subTree = instance.render.call(proxy));
         console.log("init: ", subTree);
-        patch(null, subTree, container, instance);
+        patch(null, subTree, container, instance, anchor);
         // 此时所有的虚拟结点都变成真实DOM并完成了挂载
         initialVnode.el = subTree.el;
         instance.isMounted = true;
@@ -199,13 +259,13 @@ export function createRenderer(options) {
         console.log("old", preSubTree);
         console.log("new", subTree);
         // 更新
-        patch(preSubTree, subTree, container, instance);
+        patch(preSubTree, subTree, container, instance, anchor);
       }
     });
   }
 
-  function processFragment(n1, n2: any, container: any, parentComponent) {
-    mountChildren(n2, container, parentComponent);
+  function processFragment(n1, n2: any, container: any, parentComponent, anchor) {
+    mountChildren(n2, container, parentComponent, anchor);
   }
 
   return {

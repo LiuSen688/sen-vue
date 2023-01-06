@@ -4,6 +4,7 @@ export function createVNode(type, props?, children?) {
     props, // 该结点身上的属性
     children, // 当前结点的子结点，可能是string类型或array类型
     el: null,
+    key:props && props.key
   };
   return vnode;
 }

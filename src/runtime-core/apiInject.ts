@@ -6,7 +6,6 @@ export function provide(key, val) {
   if (currentInstance) {
     let { provides } = currentInstance;
     // 获取父级 provides
-    debugger
     const parentProvides = currentInstance.parent?.provides;
     // 防止重复初始化
     if (provides === parentProvides) {

@@ -18,8 +18,10 @@ export function patchProp(el, key, prevVal, nextVal) {
   }
 }
 
-export function insert(el, container) {
-  container.append(el);
+export function insert(el, container, anchor) {
+  // insertBefore API ：如果指定了锚点，则添加到锚点之前，若锚点为null，则添加到 el 后面
+  debugger
+  container.insertBefore(el, anchor || null);
 }
 
 function remove(child) {
@@ -30,7 +32,6 @@ function remove(child) {
 }
 
 function setElementText(el, text) {
-  debugger
   el.textContent = text;
 }
 
@@ -39,7 +40,7 @@ const renderer: any = createRenderer({
   patchProp,
   insert,
   remove,
-  setElementText
+  setElementText,
 });
 
 export function createApp(...args) {
