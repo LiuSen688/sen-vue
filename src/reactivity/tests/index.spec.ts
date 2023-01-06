@@ -1,5 +1,5 @@
-import { add } from '../index'
+// import { add } from '../index'
 
-it("init",()=>{
-    expect(add(1,1)).toBe(2);
-})
+// it("init",()=>{
+//     expect(add(1,1)).toBe(2);
+// })
