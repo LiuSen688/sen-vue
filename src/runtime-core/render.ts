@@ -5,7 +5,7 @@ import { createAppAPI } from "./creatApp";
 import { Fragment } from "./vnode";
 
 export function createRenderer(options) {
-  const { createElement, patchProp, insert } = options;
+  const { createElement, patchProp, insert, remove: hostRemove, setElementText: hostSetElementText } = options;
   function render(vnode, container) {
     // 调用patch方法
     patch(null, vnode, container, null);
@@ -23,13 +23,9 @@ export function createRenderer(options) {
         // 传入进 patch 的 vnode 可能是 element 类型，也可能是 component 类型
         // 根据vnode不同类型执行不同的处理函数
         if (typeof n2.type === "string") {
-          console.log("node", n2);
-
-          debugger;
           // 处理 element 类型
           processElement(n1, n2, container, parentComponent);
         } else if (isObject(n2.type)) {
-          debugger;
           // 处理 component 类型
           processComponent(n1, n2, container, parentComponent);
         }
@@ -45,11 +41,11 @@ export function createRenderer(options) {
     }
     // 旧虚拟结点存在，意味着要走更新流程
     else {
-      patchElement(n1, n2, container);
+      patchElement(n1, n2, container, parentComponent);
     }
   }
 
-  function patchElement(n1, n2, container) {
+  function patchElement(n1, n2, container, parentComponent) {
     console.log("patchElement: ");
     console.log("n2: ", n2);
     console.log("n1: ", n1);
@@ -62,6 +58,45 @@ export function createRenderer(options) {
     const el = (n2.el = n1.el);
 
     patchProps(el, oldProps, newProps);
+    patchChildren(n1, n2, el, parentComponent);
+  }
+
+  function patchChildren(n1, n2, container, parentComponent) {
+    const n1Children = n1.children;
+    const n2Children = n2.children;
+    // 更新后的虚拟结点的 children 为 string 类型 (文本结点)
+    if (typeof n2Children === "string") {
+      if (Array.isArray(n1Children)) {
+        // 1.把旧的 children 清空
+        unMountChildren(n1.children);
+        // 2.设置新的 text
+        hostSetElementText(container, n2Children);
+      }
+      // 更新后的虚拟结点的 children 为 array 类型
+      else {
+        if (n1Children !== n2Children) {
+          hostSetElementText(container, n2Children);
+        }
+      }
+    }
+    // 更新后的虚拟结点的 children 为 array 类型
+    else {
+      if (typeof n1Children === "string") {
+        // text  --> array
+        // 先清空之前的文本结点
+        hostSetElementText(container, "");
+        // 将新的 array 类型的 children虚拟结点变成真实DOM并挂载
+        mountChildren(n2Children, container, parentComponent);
+      }
+    }
+  }
+
+  function unMountChildren(children) {
+    for (let i = 0; i < children.length; i++) {
+      const el = children[i].el;
+      // 移除结点
+      hostRemove(el);
+    }
   }
 
   function patchProps(el, oldProps, newProps) {
@@ -109,8 +144,8 @@ export function createRenderer(options) {
     insert(el, container);
   }
 
-  function mountChildren(vnode, container, parentComponent) {
-    vnode.forEach((v) => {
+  function mountChildren(children, container, parentComponent) {
+    children.forEach((v) => {
       patch(null, v, container, parentComponent);
     });
   }

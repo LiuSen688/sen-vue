@@ -22,14 +22,28 @@ export function insert(el, container) {
   container.append(el);
 }
 
+function remove(child) {
+  const parent = child.parentNode;
+  if (parent) {
+    parent.removeChild(child);
+  }
+}
+
+function setElementText(el, text) {
+  debugger
+  el.textContent = text;
+}
+
 const renderer: any = createRenderer({
   createElement,
   patchProp,
   insert,
+  remove,
+  setElementText
 });
 
 export function createApp(...args) {
-  console.log("...args: ", ...args);
+  // args 传入进来的是根组件APP组件对象
   return renderer.createApp(...args);
 }
 
