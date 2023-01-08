@@ -5,9 +5,13 @@ export function createElement(type) {
 }
 
 export function patchProp(el, key, prevVal, nextVal) {
+  // key 是否是以 on 开头
+  // 如果是以 on 开头，则表明这是一个事件
   const isOn = (key: string) => /^on[A-Z]/.test(key);
   if (isOn(key)) {
+    // 截取on后面的字符串，用于注册事件
     const event = key.slice(2).toLowerCase();
+    // 给 el 注册事件
     el.addEventListener(event, nextVal);
   } else {
     if (nextVal == undefined || nextVal == null) {

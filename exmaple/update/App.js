@@ -6,7 +6,7 @@ export const App = {
   setup() {
     const count = ref(0);
     const props = ref({ foo: "foo", bar: "bar" });
-    console.log('props: ', props);
+    console.log("props: ", props);
     const onChangePropsDemo1 = () => {
       props.value.foo = "new-foo";
     };
@@ -31,7 +31,7 @@ export const App = {
   render() {
     return h("div", { id: "root", ...this.props }, [
       h("div", {}, "count: " + this.count),
-      h("button", { onClick: this.onClick }, "click"),
+      h("button", { onClick: this.onClick, propsKey: 123 }, "click"),
       h("button", { onClick: this.onChangePropsDemo1 }, "props 值改变了 修改"),
       h("button", { onClick: this.onChangePropsDemo2 }, "props 值改变了 删除"),
       h("button", { onClick: this.onChangePropsDemo3 }, "props 改变后有一个key没有了"),

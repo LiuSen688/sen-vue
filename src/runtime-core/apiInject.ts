@@ -1,9 +1,11 @@
 import { getCurrentInstance } from "./component";
 
+// 存：provide的内容都存储到当前组件实例身上
 export function provide(key, val) {
   // 获取当前组件实例对象
   const currentInstance: any = getCurrentInstance();
   if (currentInstance) {
+    // 取出组件实例身上存放 provide 的属性值
     let { provides } = currentInstance;
     // 获取父级 provides
     const parentProvides = currentInstance.parent?.provides;
@@ -19,10 +21,18 @@ export function provide(key, val) {
   }
 }
 
-export function inject(key) {
+// 取：一般都是子组件取父组件注入的值，所以要从当前组件的父组件实例身上取 provide
+export function inject(key, defaultValue) {
   const currentInstance: any = getCurrentInstance();
   if (currentInstance) {
     const parentProvides = currentInstance.parent?.provides;
-    return parentProvides[key];
+    if (key in parentProvides) {
+      return parentProvides[key];
+    } else if (defaultValue) {
+      if(typeof defaultValue === 'function') {
+        return defaultValue();
+      }
+      return defaultValue;
+    }
   }
 }
